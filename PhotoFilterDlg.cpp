@@ -33,7 +33,11 @@ BEGIN_MESSAGE_MAP(CPhotoFilterDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_GRAY_BTN, &CPhotoFilterDlg::OnBnClickedGrayBtn)
 	ON_BN_CLICKED(IDC_FILTER1_BTN, &CPhotoFilterDlg::OnBnClickedFilter1Btn)
-	ON_BN_CLICKED(IDC_FILTER1_BTN2, &CPhotoFilterDlg::OnBnClickedFilter1Btn2)
+	ON_BN_CLICKED(IDC_FILTER2_BTN, &CPhotoFilterDlg::OnBnClickedFilter2Btn)
+	ON_BN_CLICKED(IDC_FILTER3_BTN, &CPhotoFilterDlg::OnBnClickedFilter3Btn)
+	ON_BN_CLICKED(IDC_RESTORE_BTN, &CPhotoFilterDlg::OnBnClickedRestoreBtn)
+	ON_BN_CLICKED(IDC_COMMIT_BTN, &CPhotoFilterDlg::OnBnClickedCommitBtn)
+	ON_WM_LBUTTONDOWN()
 END_MESSAGE_MAP()
 
 
@@ -53,6 +57,13 @@ BOOL CPhotoFilterDlg::OnInitDialog()
 
 	mp_image_pattern = (unsigned char*)m_image.GetBits();
 	mp_image_pattern += m_bmp_info.bmWidthBytes - 1;
+
+	m_commit_image.Create(m_bmp_info.bmWidth, m_bmp_info.bmHeight, m_bmp_info.bmBitsPixel);
+	mp_commit_pattern = (unsigned char*)m_commit_image.GetBits();
+	mp_commit_pattern += m_bmp_info.bmWidthBytes - 1;
+
+	int image_size = m_bmp_info.bmWidth * m_bmp_info.bmHeight * 3; // 각 점은 3바이트씩 되있기 때문에 3을 곱함
+	memcpy(mp_commit_pattern - image_size + 3, mp_image_pattern - image_size + 3, image_size);	// 메모리 끝위치에 있으니 제일 앞쪽으로 올수있도록 image_size를 뺌
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -173,7 +184,7 @@ _inline void InclimentColor2(unsigned char* ap_color, float a_rate)
 	*ap_color-- = (int)(*ap_color * a_rate);	// Blue
 }
 
-void CPhotoFilterDlg::OnBnClickedFilter1Btn2()
+void CPhotoFilterDlg::OnBnClickedFilter2Btn()
 {
 	int dot_count = m_bmp_info.bmWidth * m_bmp_info.bmHeight;
 	unsigned char* p = mp_image_pattern; // 초기 기준점 기억
@@ -185,4 +196,77 @@ void CPhotoFilterDlg::OnBnClickedFilter1Btn2()
 	}
 
 	Invalidate(FALSE);
+}
+
+
+void CPhotoFilterDlg::OnBnClickedFilter3Btn()
+{
+	int dot_count = m_bmp_info.bmWidth * m_bmp_info.bmHeight;
+	unsigned char* p = mp_image_pattern; // 초기 기준점 기억
+	int temp;
+
+	for (int i = 0; i < dot_count; i++)
+	{
+		temp = (*p + *(p - 1) + *(p - 2)); // RGB 합산
+		InclimentColor2(p, 1.0f + ((768 - temp) * 2) / 6000.0f); // 어두운 색이 더 가중치를 받음
+		p -= 3;
+	}
+
+	Invalidate(FALSE);
+}
+
+
+void CPhotoFilterDlg::OnBnClickedRestoreBtn()
+{
+	int image_size = m_bmp_info.bmWidth * m_bmp_info.bmHeight * 3;
+	memcpy(mp_image_pattern - image_size + 3, mp_commit_pattern - image_size + 3, image_size);
+
+	Invalidate(FALSE);
+}
+
+
+void CPhotoFilterDlg::OnBnClickedCommitBtn()
+{
+	int image_size = m_bmp_info.bmWidth * m_bmp_info.bmHeight * 3;
+	memcpy(mp_commit_pattern - image_size + 3, mp_image_pattern - image_size + 3, image_size);
+}
+
+
+void CPhotoFilterDlg::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// 밖을 누르면 안쪽으로 당겨지도록 하는 보완코드
+	if (point.x < 50) point.x = 50;
+	else if (point.x + 50 >= m_bmp_info.bmWidth / 4) point.x = m_bmp_info.bmWidth / 4 - 51; // 마우스 영역을 찾는데에는 이미지가 현재 1/4로 축소되있어서 4를 나눠줘야됨.
+	
+	if (point.y < 50) point.y = 50;
+	else if (point.y + 50 >= m_bmp_info.bmHeight / 4) point.y = m_bmp_info.bmHeight / 4 - 51;
+
+	int pos = -(point.y * 4) * m_bmp_info.bmWidth * 3 - (m_bmp_info.bmWidth - (point.x * 4)) * 3; // 실제 사진 영역의 포지션을 찾기위함이므로 * 4
+	unsigned char* p = mp_image_pattern + pos; // 원의 중심점
+	unsigned char* p_commit = mp_commit_pattern + pos; // 커밋된 사진의 원의 중심점
+
+	// 커밋을 했을때만 재클릭했을 경우 밝아짐
+	if(*p == *p_commit) InclimentColor2(p, 1.2f); // 원의 중심점 밝기를 1.2배 올림
+
+	double radian, x, y;
+
+	for (int degree = 0; degree < 360; degree++)
+	{
+		radian = degree * 3.141592 / 180.0;
+		
+		x = sin(radian);
+		y = cos(radian);
+
+		for (int radius = 1; radius < 50; radius++)
+		{
+			int pos = -(point.y * 4 - (int)(y * radius)) * m_bmp_info.bmWidth * 3 - (m_bmp_info.bmWidth - (point.x * 4) - (int)(x * radius)) * 3;
+			p = mp_image_pattern + pos;
+			p_commit = mp_commit_pattern + pos;
+			if (*p == *p_commit) InclimentColor2(p, 1.2f);
+		}
+	}
+
+	Invalidate(FALSE);
+
+	/*CDialogEx::OnLButtonDown(nFlags, point);*/
 }

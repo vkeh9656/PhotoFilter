@@ -9,9 +9,9 @@
 class CPhotoFilterDlg : public CDialogEx
 {
 private:
-	CImage m_image;
+	CImage m_image, m_commit_image;
 	BITMAP m_bmp_info;
-	unsigned char* mp_image_pattern;
+	unsigned char* mp_image_pattern, *mp_commit_pattern;
 // 생성입니다.
 public:
 	CPhotoFilterDlg(CWnd* pParent = nullptr);	// 표준 생성자입니다.
@@ -37,5 +37,9 @@ protected:
 public:
 	afx_msg void OnBnClickedGrayBtn();
 	afx_msg void OnBnClickedFilter1Btn();
-	afx_msg void OnBnClickedFilter1Btn2();
+	afx_msg void OnBnClickedFilter2Btn();
+	afx_msg void OnBnClickedFilter3Btn();
+	afx_msg void OnBnClickedRestoreBtn();
+	afx_msg void OnBnClickedCommitBtn();
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 };
