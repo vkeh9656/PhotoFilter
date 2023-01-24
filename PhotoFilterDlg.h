@@ -42,4 +42,5 @@ public:
 	afx_msg void OnBnClickedRestoreBtn();
 	afx_msg void OnBnClickedCommitBtn();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnBnClickedFilter4Btn();
 };

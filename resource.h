@@ -9,8 +9,9 @@
 #define IDC_FILTER2_BTN                 1002
 #define IDC_FILTER3_BTN                 1003
 #define IDC_RESTORE_BTN                 1004
-#define IDC_RESTORE_BTN2                1005
 #define IDC_COMMIT_BTN                  1006
+#define IDC_FILTER3_BTN2                1007
+#define IDC_FILTER4_BTN                 1007
 
 // Next default values for new objects
 // 

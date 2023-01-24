@@ -38,6 +38,7 @@ BEGIN_MESSAGE_MAP(CPhotoFilterDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RESTORE_BTN, &CPhotoFilterDlg::OnBnClickedRestoreBtn)
 	ON_BN_CLICKED(IDC_COMMIT_BTN, &CPhotoFilterDlg::OnBnClickedCommitBtn)
 	ON_WM_LBUTTONDOWN()
+	ON_BN_CLICKED(IDC_FILTER4_BTN, &CPhotoFilterDlg::OnBnClickedFilter4Btn)
 END_MESSAGE_MAP()
 
 
@@ -269,4 +270,40 @@ void CPhotoFilterDlg::OnLButtonDown(UINT nFlags, CPoint point)
 	Invalidate(FALSE);
 
 	/*CDialogEx::OnLButtonDown(nFlags, point);*/
+}
+
+
+void CPhotoFilterDlg::OnBnClickedFilter4Btn()
+{
+	int dot_count = m_bmp_info.bmWidth * m_bmp_info.bmHeight;
+	int temp;
+	unsigned char* p, *p_temp;
+	unsigned int avr_r, avr_g, avr_b;
+
+	for (int y = 1; y < m_bmp_info.bmHeight - 2; y++) {
+		p = mp_image_pattern - y * m_bmp_info.bmWidth * 3;
+		for (int x = 1; x < m_bmp_info.bmWidth - 2; x++) {
+			p_temp = p + m_bmp_info.bmWidth * 3 + 3;
+			avr_r = *p_temp + *(p_temp - 3) + *(p_temp - 6);
+			avr_g = *(p_temp - 1) + *(p_temp - 4) + *(p_temp - 7);
+			avr_b = *(p_temp - 2) + *(p_temp - 5) + *(p_temp - 8);
+
+			p_temp = p + 3;
+			avr_r += *p_temp + *(p_temp - 3) + *(p_temp - 6);
+			avr_g += *(p_temp - 1) + *(p_temp - 4) + *(p_temp - 7);
+			avr_b += *(p_temp - 2) + *(p_temp - 5) + *(p_temp - 8);
+
+			p_temp = p - m_bmp_info.bmWidth * 3 + 3;
+			avr_r += *p_temp + *(p_temp - 3) + *(p_temp - 6);
+			avr_g += *(p_temp - 1) + *(p_temp - 4) + *(p_temp - 7);
+			avr_b += *(p_temp - 2) + *(p_temp - 5) + *(p_temp - 8);
+
+			*p = avr_r / 9;
+			*(p - 1) = avr_g / 9;
+			*(p - 2) = avr_b / 9;
+			p -= 3;
+		}
+	}
+	
+	Invalidate(FALSE);
 }
